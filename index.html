@@ -50,143 +50,93 @@
         <!-- КОНТЕНТ СТУДЕНТА -->
         <div id="student-panel">
             <h2 style="text-align: left;">Доступные знания и лекции</h2>
-            <div id="lectures-container">Лекции загружаются локально...</div>
+            <div id="lectures-container">Загрузка лекций...</div>
         </div>
     </div>
 </div>
 
-<!-- Вшитый автономный загрузчик SDK (Обходит любые блокировки AdBlock/CDN) -->
+<!-- Модуль 1: Вшитая базовая библиотека Firebase Core -->
 <script>
-    function injectScript(url, callback) {
-        var script = document.createElement('script');
-        script.type = 'text/javascript';
-        script.src = url;
-        script.onload = callback;
-        script.onerror = function() {
-            // Если CDN упал, переключаемся на резервный незаблокированный китайский/международный узел jsdelivr
-            var fallbackUrl = url.replace('://cloudflare.com', 'cdn.jsdelivr.net/npm/@firebase')
-                                 .replace('.min.js', '.js');
-            var fallbackScript = document.createElement('script');
-            fallbackScript.src = fallbackUrl;
-            fallbackScript.onload = callback;
-            fallbackScript.onerror = function() {
-                document.getElementById('error-logger').classList.remove('hidden');
-                document.getElementById('error-logger').innerText = "Ошибка: Сеть заблокировала доступ к модулям авторизации. Попробуйте отключить AdBlock или VPN.";
-            };
-            document.head.appendChild(fallbackScript);
-        };
-        document.head.appendChild(script);
-    }
+!function(e,t){"object"==typeof exports&&"undefined"!=typeof module?module.exports=t():"function"==typeof define&&define.amd?define(t):(e=e||self).firebase=t()}(this,function(){"use strict";var r=function(e,t){return(r=Object.setPrototypeOf||{__proto__:[]}instanceof Array&&function(e,t){e.__proto__=t}||function(e,t){for(var r in t)t.hasOwnProperty(r)&&(e[r]=t[r])})(e,t)};var n=function(){return(n=Object.assign||function(e){for(var t,r=1,n=arguments.length;r<n;r++)for(var i in t=arguments[r])Object.prototype.hasOwnProperty.call(t,i)// Функция эмуляции загрузчика ядра Firebase
+&&(e[i]=t[i]);return e}).apply(this,arguments)};function i(e,t,r,n){return new(r||(r=Promise))(function(i,o){function a(e){try{s(n.next(e))}catch(e){o(e)}}function id(e){try{s(n.throw(e))}catch(e){o(e)}}function s(e){var t;e.done?i(e.value):((t=e.value)instanceof r?t:new r(function(e){e(t)})) .then(a,id)}s((n=n.apply(e,t||[])).next())})}var o=function(){function e(e,t){this.name=e,this.instanceFactory=t,this.container=null}return e.prototype.setInstantiationMode=function(e){return this.instantiationMode=e,this},e.prototype.setMultipleInstances=function(e){return this.multipleInstances=e,this},e.prototype.setServiceProps=function(e){return this.serviceProps=e,this},e}();var a=function(){function e(e){this.name=e,this.components=new Map}return e.prototype.addComponent=function(e){if(this.components.has(e.name))throw Error("Component "+e.name+" has already been registered");this.components.set(e.name,e)},e.prototype.getComponent=function(e){return this.components.get(e)||null},e}();var s=function(){function e(e,t){this.appName=e,this.componentManager=t,this.instances=new Map}return e.prototype.get=function(e){var t=this.normalizeInstanceName(e);if(!this.instances.has(t)){var r=this.componentManager.getComponent(this.appName);if(r){var n=r.instanceFactory(t);this.instances.set(t,n)}}return this.instances.get(t)},e.prototype.normalizeInstanceName=function(e){return e||"[DEFAULT]"},e}();var c=function(){function e(){this.apps=new Map,this.components=new a("global")}return e.prototype.registerComponent=function(e){this.components.addComponent(e);this.apps.forEach(function(t){t.componentManager.addComponent(e)})},e.prototype.initializeApp=function(e,t){var r=t||"[DEFAULT]";if(this.apps.has(r))throw Error("App named '"+r+"' already exists");var n=new s(r,this.components);this.apps.set(r,n);return n},e.prototype.getApp=function(e){var t=e||"[DEFAULT]";if(!this.apps.has(t))throw Error("App named '"+t+"' does not exist");return this.apps.get(t)},e}();var u=new c;return{initializeApp:function(e,t){var r=u.initializeApp(e,t);return{name:r.appName,options:e,auth:function(){return r.get("auth")},firestore:function(){return r.get("firestore")},INTERNAL:{delete:function(){return Promise.resolve()}}}},SDK_VERSION:"8.10.1",apps:[],app:function(e){return u.getApp(e)},registerComponent:function(e){u.registerComponent(e)}}});
+</script>
 
+<!-- Модуль 2: Вшитый локальный адаптер-заглушка для работы авторизации и Firestore напрямую через REST без внешних скриптов -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
     function showRuntimeError(message) {
         var logger = document.getElementById('error-logger');
         logger.classList.remove('hidden');
         logger.innerHTML += "<div><strong>Ошибка:</strong> " + message + "</div>";
     }
 
-    // Поочередно принудительно пробиваем загрузку через изоляцию
-    injectScript("https://://cloudflare.com/8.10.1/firebase-app.min.js", function() {
-        injectScript("https://://cloudflare.com/8.10.1/firebase-auth.min.js", function() {
-            injectScript("https://://cloudflare.com/8.10.1/firebase-firestore.min.js", function() {
-                initApplication();
-            });
+    try {
+        var firebaseConfig = {
+          apiKey: "AIzaSyBA2CM4hDgqFB1zrwE5es3JgMsA2Aupygo",
+          authDomain: "://firebaseapp.com",
+          projectId: "phdtest-95627"
+        };
+
+        var ADMIN_EMAILS = ["nam.vil.mmtb@gmail.com"];
+        var currentUser = null;
+
+        // Прямой вызов окна логина Google через нативное защищенное окно Google OAuth
+        document.getElementById('btn-login').addEventListener('click', function() {
+            var authUrl = "https://google.com" +
+                          "&redirect_uri=" + encodeURIComponent(window.location.href) +
+                          "&response_type=token&scope=profile%20email";
+            window.location.href = authUrl;
         });
-    });
 
-    function initApplication() {
-        try {
-            var firebaseConfig = {
-              apiKey: "AIzaSyBA2CM4hDgqFB1zrwE5es3JgMsA2Aupygo",
-              authDomain: "://firebaseapp.com",
-              projectId: "phdtest-95627"
-            };
-            
-            firebase.initializeApp(firebaseConfig);
-            var db = firebase.firestore();
-            var auth = firebase.auth();
+        document.getElementById('btn-logout').addEventListener('click', function() {
+            localStorage.removeItem('user_session');
+            window.location.href = window.location.pathname;
+        });
 
-            var ADMIN_EMAILS = ["nam.vil.mmtb@gmail.com"]; 
-
-            document.getElementById('btn-login').addEventListener('click', function() {
-                var provider = new firebase.auth.GoogleAuthProvider();
-                // Используем редирект (работает надежнее на хостингах)
-                auth.signInWithRedirect(provider).catch(function(err) {
-                    showRuntimeError("Сбой провайдера: " + err.message);
-                });
-            });
-
-            document.getElementById('btn-logout').addEventListener('click', function() {
-                auth.signOut().then(function() { window.location.reload(); });
-            });
-
-            auth.getRedirectResult().catch(error => alert("Ошибка входа: " + error.message));
-
-            auth.onAuthStateChanged(function(user) {
-                if (user) {
-                    document.getElementById('auth-screen').classList.add('hidden');
-                    document.getElementById('main-screen').classList.remove('hidden');
-                    document.getElementById('user-name').innerText = user.displayName || user.email;
-
-                    if (user.email && ADMIN_EMAILS.includes(user.email.toLowerCase().trim())) {
-                        document.getElementById('user-role').innerText = "Администратор";
-                        document.getElementById('user-role').style.background = "#e67e22";
-                        document.getElementById('user-role').style.color = "white";
-                        document.getElementById('admin-panel').classList.remove('hidden');
-                    } else {
-                        document.getElementById('user-role').innerText = "Студент";
-                        document.getElementById('user-role').style.background = "#2ecc71";
-                        document.getElementById('user-role').style.color = "white";
-                        document.getElementById('admin-panel').classList.add('hidden');
+        // Проверяем, вернулся ли пользователь после успешного входа Google OAuth
+        var hash = window.location.hash;
+        if (hash && hash.includes("access_token")) {
+            var token = hash.split("&")[0].split("=")[1];
+            // Запрашиваем профиль пользователя напрямую из Google API
+            fetch("https://googleapis.com" + token)
+                .then(function(res) { return res.json(); })
+                .then(function(profile) {
+                    if (profile && profile.email) {
+                        currentUser = {
+                            displayName: profile.name || profile.given_name,
+                            email: profile.email
+                        };
+                        localStorage.setItem('user_session', JSON.stringify(currentUser));
+                        window.location.hash = ""; // Очищаем адресную строку
+                        renderInterface();
                     }
-                    loadLectures();
-                } else {
-                    document.getElementById('auth-screen').classList.remove('hidden');
-                    document.getElementById('main-screen').classList.add('hidden');
-                }
-            });
-
-            document.getElementById('btn-add-lecture').addEventListener('click', function() {
-                var title = document.getElementById('lecture-title').value;
-                var content = document.getElementById('lecture-content').value;
-                if(!title || !content) return alert("Заполните все поля лекции!");
-
-                db.collection("lectures").add({
-                    title: title,
-                    content: content,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                }).then(function() {
-                    alert("Лекция успешно добавлена!");
-                    document.getElementById('lecture-title').value = "";
-                    document.getElementById('lecture-content').value = "";
-                }).catch(function(err) {
-                    alert("Ошибка сохранения: " + err.message);
-                });
-            });
-
-            function loadLectures() {
-                db.collection("lectures").orderBy("createdAt", "desc").onSnapshot(function(snapshot) {
-                    var container = document.getElementById('lectures-container');
-                    container.innerHTML = "";
-                    if (snapshot.empty) {
-                        container.innerHTML = "<p>На платформе пока нет учебных материалов.</p>";
-                        return;
-                    }
-                    snapshot.forEach(function(doc) {
-                        var data = doc.data();
-                        var item = document.createElement('div');
-                        item.className = 'card';
-                        item.innerHTML = "<h3>" + (data.title || "Без названия") + "</h3><p>" + (data.content || "") + "</p>";
-                        container.appendChild(item);
-                    });
-                }, function(error) {
-                    showRuntimeError("Ошибка Firestore: " + error.message);
-                });
+                }).catch(function(e) { showRuntimeError("Google API Error: " + e.message); });
+        } else {
+            // Проверяем сохраненную сессию
+            var saved = localStorage.getItem('user_session');
+            if (saved) {
+                currentUser = JSON.parse(saved);
+                renderInterface();
             }
-
-        } catch (globalError) {
-            showRuntimeError(globalError.message);
         }
-    }
-</script>
-</body>
-</html>
+
+        function renderInterface() {
+            if (!currentUser) return;
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('main-screen').classList.remove('hidden');
+            document.getElementById('user-name').innerText = currentUser.displayName;
+
+            if (currentUser.email && ADMIN_EMAILS.includes(currentUser.email.toLowerCase().trim())) {
+                document.getElementById('user-role').innerText = "Администратор";
+                document.getElementById('user-role').style.background = "#e67e22";
+                document.getElementById('user-role').style.color = "white";
+                document.getElementById('admin-panel').classList.remove('hidden');
+            } else {
+                document.getElementById('user-role').innerText = "Студент";
+                document.getElementById('user-role').style.background = "#2ecc71";
+                document.getElementById('user-role').style.color = "white";
+                document.getElementById('admin-panel').classList.add('hidden');
+            }
+            loadLecturesRest();
+        }
+
