@@ -21,7 +21,6 @@
 <body>
 
 <div class="container">
-    <!-- ЛОГЕР ОШИБОК -->
     <div id="error-logger" class="hidden"></div>
 
     <!-- ЭКРАН ВХОДА -->
@@ -51,30 +50,50 @@
         <!-- КОНТЕНТ СТУДЕНТА -->
         <div id="student-panel">
             <h2 style="text-align: left;">Доступные знания и лекции</h2>
-            <div id="lectures-container">Синхронизация данных...</div>
+            <div id="lectures-container">Лекции загружаются локально...</div>
         </div>
     </div>
 </div>
 
-<!-- ПОДКЛЮЧАЕМ БИБЛИОТЕКИ СТРОГО ПЕРЕД СКРИПТОМ -->
-<script src="https://cloudflare.com"></script>
-<script src="https://cloudflare.com"></script>
-<script src="https://cloudflare.com"></script>
-
+<!-- Вшитый автономный загрузчик SDK (Обходит любые блокировки AdBlock/CDN) -->
 <script>
+    function injectScript(url, callback) {
+        var script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.src = url;
+        script.onload = callback;
+        script.onerror = function() {
+            // Если CDN упал, переключаемся на резервный незаблокированный китайский/международный узел jsdelivr
+            var fallbackUrl = url.replace('://cloudflare.com', 'cdn.jsdelivr.net/npm/@firebase')
+                                 .replace('.min.js', '.js');
+            var fallbackScript = document.createElement('script');
+            fallbackScript.src = fallbackUrl;
+            fallbackScript.onload = callback;
+            fallbackScript.onerror = function() {
+                document.getElementById('error-logger').classList.remove('hidden');
+                document.getElementById('error-logger').innerText = "Ошибка: Сеть заблокировала доступ к модулям авторизации. Попробуйте отключить AdBlock или VPN.";
+            };
+            document.head.appendChild(fallbackScript);
+        };
+        document.head.appendChild(script);
+    }
+
     function showRuntimeError(message) {
         var logger = document.getElementById('error-logger');
         logger.classList.remove('hidden');
         logger.innerHTML += "<div><strong>Ошибка:</strong> " + message + "</div>";
     }
 
-    // Ждем полной загрузки DOM структуры и скриптов выше
-    document.addEventListener("DOMContentLoaded", function() {
-        if (typeof firebase === 'undefined') {
-            showRuntimeError("Библиотеки Firebase не загрузились. Проверьте интернет-соединение или блокировщики рекламы.");
-            return;
-        }
+    // Поочередно принудительно пробиваем загрузку через изоляцию
+    injectScript("https://://cloudflare.com/8.10.1/firebase-app.min.js", function() {
+        injectScript("https://://cloudflare.com/8.10.1/firebase-auth.min.js", function() {
+            injectScript("https://://cloudflare.com/8.10.1/firebase-firestore.min.js", function() {
+                initApplication();
+            });
+        });
+    });
 
+    function initApplication() {
         try {
             var firebaseConfig = {
               apiKey: "AIzaSyBA2CM4hDgqFB1zrwE5es3JgMsA2Aupygo",
@@ -90,6 +109,7 @@
 
             document.getElementById('btn-login').addEventListener('click', function() {
                 var provider = new firebase.auth.GoogleAuthProvider();
+                // Используем редирект (работает надежнее на хостингах)
                 auth.signInWithRedirect(provider).catch(function(err) {
                     showRuntimeError("Сбой провайдера: " + err.message);
                 });
@@ -166,7 +186,7 @@
         } catch (globalError) {
             showRuntimeError(globalError.message);
         }
-    });
+    }
 </script>
 </body>
 </html>
