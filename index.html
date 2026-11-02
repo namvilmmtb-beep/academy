@@ -4,12 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Образовательная Платформа</title>
-    
-    <!-- Используем гарантированное зеркало cdnjs, которое не блокируется браузерами -->
-    <script src="https://cloudflare.com"></script>
-    <script src="https://cloudflare.com"></script>
-    <script src="https://cloudflare.com"></script>
-
     <style>
         body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
         .container { max-width: 800px; margin: 40px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center; }
@@ -27,6 +21,7 @@
 <body>
 
 <div class="container">
+    <!-- ЛОГЕР ОШИБОК -->
     <div id="error-logger" class="hidden"></div>
 
     <!-- ЭКРАН ВХОДА -->
@@ -61,6 +56,11 @@
     </div>
 </div>
 
+<!-- ПОДКЛЮЧАЕМ БИБЛИОТЕКИ СТРОГО ПЕРЕД СКРИПТОМ -->
+<script src="https://cloudflare.com"></script>
+<script src="https://cloudflare.com"></script>
+<script src="https://cloudflare.com"></script>
+
 <script>
     function showRuntimeError(message) {
         var logger = document.getElementById('error-logger');
@@ -68,102 +68,105 @@
         logger.innerHTML += "<div><strong>Ошибка:</strong> " + message + "</div>";
     }
 
-    window.onerror = function(msg, url, line) {
-        showRuntimeError(msg + " (Строка: " + line + ")");
-        return false;
-    };
-
-    try {
-        var firebaseConfig = {
-          apiKey: "AIzaSyBA2CM4hDgqFB1zrwE5es3JgMsA2Aupygo",
-          authDomain: "://firebaseapp.com",
-          projectId: "phdtest-95627"
-        };
-        
-        firebase.initializeApp(firebaseConfig);
-        var db = firebase.firestore();
-        var auth = firebase.auth();
-
-        var ADMIN_EMAILS = ["nam.vil.mmtb@gmail.com"]; 
-
-        document.getElementById('btn-login').addEventListener('click', function() {
-            var provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithRedirect(provider).catch(function(err) {
-                showRuntimeError("Сбой провайдера: " + err.message);
-            });
-        });
-
-        document.getElementById('btn-logout').addEventListener('click', function() {
-            auth.signOut().then(function() { window.location.reload(); });
-        });
-
-        auth.getRedirectResult().catch(error => alert("Ошибка входа: " + error.message));
-
-        auth.onAuthStateChanged(function(user) {
-            if (user) {
-                document.getElementById('auth-screen').classList.add('hidden');
-                document.getElementById('main-screen').classList.remove('hidden');
-                document.getElementById('user-name').innerText = user.displayName || user.email;
-
-                if (user.email && ADMIN_EMAILS.includes(user.email.toLowerCase().trim())) {
-                    document.getElementById('user-role').innerText = "Администратор";
-                    document.getElementById('user-role').style.background = "#e67e22";
-                    document.getElementById('user-role').style.color = "white";
-                    document.getElementById('admin-panel').classList.remove('hidden');
-                } else {
-                    document.getElementById('user-role').innerText = "Студент";
-                    document.getElementById('user-role').style.background = "#2ecc71";
-                    document.getElementById('user-role').style.color = "white";
-                    document.getElementById('admin-panel').classList.add('hidden');
-                }
-                loadLectures();
-            } else {
-                document.getElementById('auth-screen').classList.remove('hidden');
-                document.getElementById('main-screen').classList.add('hidden');
-            }
-        });
-
-        document.getElementById('btn-add-lecture').addEventListener('click', function() {
-            var title = document.getElementById('lecture-title').value;
-            var content = document.getElementById('lecture-content').value;
-            if(!title || !content) return alert("Заполните все поля лекции!");
-
-            db.collection("lectures").add({
-                title: title,
-                content: content,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(function() {
-                alert("Лекция успешно добавлена!");
-                document.getElementById('lecture-title').value = "";
-                document.getElementById('lecture-content').value = "";
-            }).catch(function(err) {
-                alert("Ошибка сохранения: " + err.message);
-            });
-        });
-
-        function loadLectures() {
-            db.collection("lectures").orderBy("createdAt", "desc").onSnapshot(function(snapshot) {
-                var container = document.getElementById('lectures-container');
-                container.innerHTML = "";
-                if (snapshot.empty) {
-                    container.innerHTML = "<p>На платформе пока нет учебных материалов.</p>";
-                    return;
-                }
-                snapshot.forEach(function(doc) {
-                    var data = doc.data();
-                    var item = document.createElement('div');
-                    item.className = 'card';
-                    item.innerHTML = "<h3>" + (data.title || "Без названия") + "</h3><p>" + (data.content || "") + "</p>";
-                    container.appendChild(item);
-                });
-            }, function(error) {
-                showRuntimeError("Ошибка Firestore: " + error.message);
-            });
+    // Ждем полной загрузки DOM структуры и скриптов выше
+    document.addEventListener("DOMContentLoaded", function() {
+        if (typeof firebase === 'undefined') {
+            showRuntimeError("Библиотеки Firebase не загрузились. Проверьте интернет-соединение или блокировщики рекламы.");
+            return;
         }
 
-    } catch (globalError) {
-        showRuntimeError(globalError.message);
-    }
+        try {
+            var firebaseConfig = {
+              apiKey: "AIzaSyBA2CM4hDgqFB1zrwE5es3JgMsA2Aupygo",
+              authDomain: "://firebaseapp.com",
+              projectId: "phdtest-95627"
+            };
+            
+            firebase.initializeApp(firebaseConfig);
+            var db = firebase.firestore();
+            var auth = firebase.auth();
+
+            var ADMIN_EMAILS = ["nam.vil.mmtb@gmail.com"]; 
+
+            document.getElementById('btn-login').addEventListener('click', function() {
+                var provider = new firebase.auth.GoogleAuthProvider();
+                auth.signInWithRedirect(provider).catch(function(err) {
+                    showRuntimeError("Сбой провайдера: " + err.message);
+                });
+            });
+
+            document.getElementById('btn-logout').addEventListener('click', function() {
+                auth.signOut().then(function() { window.location.reload(); });
+            });
+
+            auth.getRedirectResult().catch(error => alert("Ошибка входа: " + error.message));
+
+            auth.onAuthStateChanged(function(user) {
+                if (user) {
+                    document.getElementById('auth-screen').classList.add('hidden');
+                    document.getElementById('main-screen').classList.remove('hidden');
+                    document.getElementById('user-name').innerText = user.displayName || user.email;
+
+                    if (user.email && ADMIN_EMAILS.includes(user.email.toLowerCase().trim())) {
+                        document.getElementById('user-role').innerText = "Администратор";
+                        document.getElementById('user-role').style.background = "#e67e22";
+                        document.getElementById('user-role').style.color = "white";
+                        document.getElementById('admin-panel').classList.remove('hidden');
+                    } else {
+                        document.getElementById('user-role').innerText = "Студент";
+                        document.getElementById('user-role').style.background = "#2ecc71";
+                        document.getElementById('user-role').style.color = "white";
+                        document.getElementById('admin-panel').classList.add('hidden');
+                    }
+                    loadLectures();
+                } else {
+                    document.getElementById('auth-screen').classList.remove('hidden');
+                    document.getElementById('main-screen').classList.add('hidden');
+                }
+            });
+
+            document.getElementById('btn-add-lecture').addEventListener('click', function() {
+                var title = document.getElementById('lecture-title').value;
+                var content = document.getElementById('lecture-content').value;
+                if(!title || !content) return alert("Заполните все поля лекции!");
+
+                db.collection("lectures").add({
+                    title: title,
+                    content: content,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                }).then(function() {
+                    alert("Лекция успешно добавлена!");
+                    document.getElementById('lecture-title').value = "";
+                    document.getElementById('lecture-content').value = "";
+                }).catch(function(err) {
+                    alert("Ошибка сохранения: " + err.message);
+                });
+            });
+
+            function loadLectures() {
+                db.collection("lectures").orderBy("createdAt", "desc").onSnapshot(function(snapshot) {
+                    var container = document.getElementById('lectures-container');
+                    container.innerHTML = "";
+                    if (snapshot.empty) {
+                        container.innerHTML = "<p>На платформе пока нет учебных материалов.</p>";
+                        return;
+                    }
+                    snapshot.forEach(function(doc) {
+                        var data = doc.data();
+                        var item = document.createElement('div');
+                        item.className = 'card';
+                        item.innerHTML = "<h3>" + (data.title || "Без названия") + "</h3><p>" + (data.content || "") + "</p>";
+                        container.appendChild(item);
+                    });
+                }, function(error) {
+                    showRuntimeError("Ошибка Firestore: " + error.message);
+                });
+            }
+
+        } catch (globalError) {
+            showRuntimeError(globalError.message);
+        }
+    });
 </script>
 </body>
 </html>
