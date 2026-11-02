@@ -3,140 +3,203 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Образовательная Платформа</title>
+    <title>Академия Знаний</title>
     <style>
         body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
         .container { max-width: 800px; margin: 40px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center; }
         .hidden { display: none !important; }
-        button { background-color: #4285F4; color: white; border: none; padding: 12px 24px; font-size: 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        button { background-color: #4285F4; color: white; border: none; padding: 12px 24px; font-size: 16px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         button:hover { background-color: #357ae8; }
         .btn-logout { background-color: #d9534f; float: right; padding: 8px 15px; font-size: 14px; }
+        .btn-logout:hover { background-color: #c9302c; }
         .card { background: #fafafa; padding: 15px; border-left: 4px solid #4285F4; margin-bottom: 15px; border-radius: 4px; text-align: left; }
         .admin-zone { border-left-color: #e67e22; background: #fff5eb; }
-        input, textarea { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        input, textarea { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 15px; }
         h1, h2 { color: #2c3e50; }
-        #error-logger { color: #d9534f; background: #fdf2f2; padding: 10px; border-radius: 4px; margin-top: 15px; font-family: monospace; font-size: 13px; text-align: left; }
+        .toggle-auth { color: #4285F4; cursor: pointer; text-decoration: underline; margin-top: 15px; display: inline-block; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="error-logger" class="hidden"></div>
 
-    <!-- ЭКРАН ВХОДА -->
+    <!-- Формы авторизации (Вход / Регистрация) -->
     <div id="auth-screen">
-        <h1>Добро пожаловать в Академию</h1>
-        <p>Для получения знаний и прохождения тестов авторизуйтесь через Gmail аккаунт.</p>
-        <br>
-        <button id="btn-login">Войти через Google (Gmail)</button>
+        <h1 id="auth-title">Вход в Академию</h1>
+        <p id="auth-desc">Введите свои данные для доступа к учебным материалам.</p>
+        
+        <div id="form-fields">
+            <!-- Поле имени нужно только для регистрации -->
+            <input type="text" id="user-name-input" placeholder="Ваше Имя" class="hidden">
+            <input type="email" id="user-email-input" placeholder="Электронная почта (Email)">
+            <input type="password" id="user-password-input" placeholder="Пароль">
+            <br><br>
+            <button id="btn-submit-auth">Войти</button>
+        </div>
+        
+        <span id="toggle-auth-mode" class="toggle-auth">Нет аккаунта? Зарегистрироваться</span>
     </div>
 
-    <!-- ГЛАВНЫЙ ЭКРАН -->
+    <!-- Главный экран платформы -->
     <div id="main-screen" class="hidden">
         <div style="border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 20px; text-align: left;">
-            Добро пожаловать, <strong id="user-name">Загрузка...</strong> 
-            <span id="user-role" style="font-size:12px; padding:3px 8px; background:#ddd; border-radius:10px; margin-left:10px;">Студент</span>
+            Добро пожаловать, <strong id="user-display-name">Загрузка...</strong> 
+            <span id="user-role" style="font-size:12px; padding:3px 8px; background:#ddd; border-radius:10px; margin-left:10px; color: white;">Студент</span>
             <button id="btn-logout" class="btn-logout">Выйти</button>
         </div>
 
-        <!-- АДМИН ПАНЕЛЬ -->
+        <!-- ПАНЕЛЬ АДМИНИСТРАТОРА -->
         <div id="admin-panel" class="card admin-zone hidden">
             <h2>Панель администратора</h2>
+            <p>Здесь вы можете публиковать новые лекции для ваших студентов.</p>
             <input type="text" id="lecture-title" placeholder="Название лекции">
-            <textarea id="lecture-content" rows="4" placeholder="Содержимое лекции..."></textarea>
+            <textarea id="lecture-content" rows="5" placeholder="Текст лекции или ссылка на видеоурок..."></textarea>
             <button id="btn-add-lecture" style="background-color: #e67e22;">Опубликовать лекцию</button>
         </div>
 
-        <!-- КОНТЕНТ СТУДЕНТА -->
+        <!-- ЛЕНТА ЗНАНИЙ ДЛЯ СТУДЕНТА -->
         <div id="student-panel">
             <h2 style="text-align: left;">Доступные знания и лекции</h2>
-            <div id="lectures-container">Загрузка лекций...</div>
+            <div id="lectures-container">Загрузка материалов учебной программы...</div>
         </div>
     </div>
+
 </div>
 
-<!-- Модуль 1: Вшитая базовая библиотека Firebase Core -->
 <script>
-!function(e,t){"object"==typeof exports&&"undefined"!=typeof module?module.exports=t():"function"==typeof define&&define.amd?define(t):(e=e||self).firebase=t()}(this,function(){"use strict";var r=function(e,t){return(r=Object.setPrototypeOf||{__proto__:[]}instanceof Array&&function(e,t){e.__proto__=t}||function(e,t){for(var r in t)t.hasOwnProperty(r)&&(e[r]=t[r])})(e,t)};var n=function(){return(n=Object.assign||function(e){for(var t,r=1,n=arguments.length;r<n;r++)for(var i in t=arguments[r])Object.prototype.hasOwnProperty.call(t,i)// Функция эмуляции загрузчика ядра Firebase
-&&(e[i]=t[i]);return e}).apply(this,arguments)};function i(e,t,r,n){return new(r||(r=Promise))(function(i,o){function a(e){try{s(n.next(e))}catch(e){o(e)}}function id(e){try{s(n.throw(e))}catch(e){o(e)}}function s(e){var t;e.done?i(e.value):((t=e.value)instanceof r?t:new r(function(e){e(t)})) .then(a,id)}s((n=n.apply(e,t||[])).next())})}var o=function(){function e(e,t){this.name=e,this.instanceFactory=t,this.container=null}return e.prototype.setInstantiationMode=function(e){return this.instantiationMode=e,this},e.prototype.setMultipleInstances=function(e){return this.multipleInstances=e,this},e.prototype.setServiceProps=function(e){return this.serviceProps=e,this},e}();var a=function(){function e(e){this.name=e,this.components=new Map}return e.prototype.addComponent=function(e){if(this.components.has(e.name))throw Error("Component "+e.name+" has already been registered");this.components.set(e.name,e)},e.prototype.getComponent=function(e){return this.components.get(e)||null},e}();var s=function(){function e(e,t){this.appName=e,this.componentManager=t,this.instances=new Map}return e.prototype.get=function(e){var t=this.normalizeInstanceName(e);if(!this.instances.has(t)){var r=this.componentManager.getComponent(this.appName);if(r){var n=r.instanceFactory(t);this.instances.set(t,n)}}return this.instances.get(t)},e.prototype.normalizeInstanceName=function(e){return e||"[DEFAULT]"},e}();var c=function(){function e(){this.apps=new Map,this.components=new a("global")}return e.prototype.registerComponent=function(e){this.components.addComponent(e);this.apps.forEach(function(t){t.componentManager.addComponent(e)})},e.prototype.initializeApp=function(e,t){var r=t||"[DEFAULT]";if(this.apps.has(r))throw Error("App named '"+r+"' already exists");var n=new s(r,this.components);this.apps.set(r,n);return n},e.prototype.getApp=function(e){var t=e||"[DEFAULT]";if(!this.apps.has(t))throw Error("App named '"+t+"' does not exist");return this.apps.get(t)},e}();var u=new c;return{initializeApp:function(e,t){var r=u.initializeApp(e,t);return{name:r.appName,options:e,auth:function(){return r.get("auth")},firestore:function(){return r.get("firestore")},INTERNAL:{delete:function(){return Promise.resolve()}}}},SDK_VERSION:"8.10.1",apps:[],app:function(e){return u.getApp(e)},registerComponent:function(e){u.registerComponent(e)}}});
-</script>
+    // Ваша конфигурация проекта Firebase phdtest-95627
+    const API_KEY = "AIzaSyBA2CM4hDgqFB1zrwE5es3JgMsA2Aupygo";
+    const PROJECT_ID = "phdtest-95627";
+    
+    // Почта главного администратора сайта
+    const ADMIN_EMAIL = "nam.vil.mmtb@gmail.com";
 
-<!-- Модуль 2: Вшитый локальный адаптер-заглушка для работы авторизации и Firestore напрямую через REST без внешних скриптов -->
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-    function showRuntimeError(message) {
-        var logger = document.getElementById('error-logger');
-        logger.classList.remove('hidden');
-        logger.innerHTML += "<div><strong>Ошибка:</strong> " + message + "</div>";
+    let isSignUpMode = false; // Режим формы: false = Вход, true = Регистрация
+    let currentUser = null;
+
+    // Переключение режимов Вход / Регистрация
+    document.getElementById('toggle-auth-mode').addEventListener('click', function() {
+        isSignUpMode = !isSignUpMode;
+        if (isSignUpMode) {
+            document.getElementById('auth-title').innerText = "Регистрация студента";
+            document.getElementById('auth-desc').innerText = "Создайте личный профиль для прохождения обучения.";
+            document.getElementById('user-name-input').classList.remove('hidden');
+            document.getElementById('btn-submit-auth').innerText = "Зарегистрироваться";
+            this.innerText = "Уже есть аккаунт? Войти";
+        } else {
+            document.getElementById('auth-title').innerText = "Вход в Академию";
+            document.getElementById('auth-desc').innerText = "Введите свои данные для доступа к учебным материалам.";
+            document.getElementById('user-name-input').classList.add('hidden');
+            document.getElementById('btn-submit-auth').innerText = "Войти";
+            this.innerText = "Нет аккаунта? Зарегистрироваться";
+        }
+    });
+
+    // Обработка отправки формы (Вход или Регистрация)
+    document.getElementById('btn-submit-auth').addEventListener('click', function() {
+        const email = document.getElementById('user-email-input').value.trim();
+        const password = document.getElementById('user-password-input').value.trim();
+        const name = document.getElementById('user-name-input').value.trim();
+
+        if (!email || !password || (isSignUpMode && !name)) {
+            return alert("Пожалуйста, заполните все поля формы!");
+        }
+
+        if (isSignUpMode) {
+            // РЕГИСТРАЦИЯ через нативный REST API Firebase Auth
+            const url = `https://googleapis.com{API_KEY}`;
+            fetch(url, {
+                method: "POST",
+                body: JSON.stringify({ email: email, password: password, returnSecureToken: true }),
+                headers: { "Content-Type": "application/json" }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) throw new Error(data.error.message);
+                
+                // Сохраняем имя профиля
+                currentUser = { displayName: name, email: data.email, localId: data.localId };
+                localStorage.setItem('user_session_local', JSON.stringify(currentUser));
+                alert("Регистрация успешна!");
+                renderInterface();
+            })
+            .catch(err => alert("Ошибка регистрации: " + translateError(err.message)));
+        } else {
+            // ВХОД через нативный REST API Firebase Auth
+            const url = `https://googleapis.com{API_KEY}`;
+            fetch(url, {
+                method: "POST",
+                body: JSON.stringify({ email: email, password: password, returnSecureToken: true }),
+                headers: { "Content-Type": "application/json" }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) throw new Error(data.error.message);
+                
+                currentUser = { displayName: email.split('@')[0], email: data.email, localId: data.localId };
+                localStorage.setItem('user_session_local', JSON.stringify(currentUser));
+                renderInterface();
+            })
+            .catch(err => alert("Ошибка входа: " + translateError(err.message)));
+        }
+    });
+
+    // Выход из аккаунта
+    document.getElementById('btn-logout').addEventListener('click', function() {
+        localStorage.removeItem('user_session_local');
+        window.location.reload();
+    });
+
+    // Отрисовка интерфейса на основе роли пользователя
+    function renderInterface() {
+        if (!currentUser) return;
+        document.getElementById('auth-screen').classList.add('hidden');
+        document.getElementById('main-screen').classList.remove('hidden');
+        document.getElementById('user-display-name').innerText = currentUser.displayName;
+
+        const roleBadge = document.getElementById('user-role');
+        const adminPanel = document.getElementById('admin-panel');
+
+        if (currentUser.email.toLowerCase().trim() === ADMIN_EMAIL.toLowerCase().trim()) {
+            roleBadge.innerText = "Администратор";
+            roleBadge.style.background = "#e67e22";
+            adminPanel.classList.remove('hidden');
+        } else {
+            roleBadge.innerText = "Студент";
+            roleBadge.style.background = "#2ecc71";
+            adminPanel.classList.add('hidden');
+        }
+        loadLectures();
     }
 
-    try {
-        var firebaseConfig = {
-          apiKey: "AIzaSyBA2CM4hDgqFB1zrwE5es3JgMsA2Aupygo",
-          authDomain: "://firebaseapp.com",
-          projectId: "phdtest-95627"
+    // Добавление новой лекции администратором
+    document.getElementById('btn-add-lecture').addEventListener('click', function() {
+        const title = document.getElementById('lecture-title').value.trim();
+        const content = document.getElementById('lecture-content').value.trim();
+        if(!title || !content) return alert("Заполните поля названия и текста лекции!");
+
+        const url = `https://googleapis.com{PROJECT_ID}/databases/(default)/documents/lectures`;
+        const payload = {
+            fields: {
+                title: { stringValue: title },
+                content: { stringValue: content },
+                createdAt: { stringValue: new Date().toISOString() }
+            }
         };
 
-        var ADMIN_EMAILS = ["nam.vil.mmtb@gmail.com"];
-        var currentUser = null;
+        fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(() => {
+            alert("Лекция успешно опубликована!");
+            document.getElementById('lecture-title').value = "";
+            document.getElementById('lecture-content').value = "";
+            loadLectures();
+        })
+        .catch(err => alert("Ошибка добавления лекции: " + err.message));
+    });
 
-        // Прямой вызов окна логина Google через нативное защищенное окно Google OAuth
-        document.getElementById('btn-login').addEventListener('click', function() {
-            var authUrl = "https://google.com" +
-                          "&redirect_uri=" + encodeURIComponent(window.location.href) +
-                          "&response_type=token&scope=profile%20email";
-            window.location.href = authUrl;
-        });
-
-        document.getElementById('btn-logout').addEventListener('click', function() {
-            localStorage.removeItem('user_session');
-            window.location.href = window.location.pathname;
-        });
-
-        // Проверяем, вернулся ли пользователь после успешного входа Google OAuth
-        var hash = window.location.hash;
-        if (hash && hash.includes("access_token")) {
-            var token = hash.split("&")[0].split("=")[1];
-            // Запрашиваем профиль пользователя напрямую из Google API
-            fetch("https://googleapis.com" + token)
-                .then(function(res) { return res.json(); })
-                .then(function(profile) {
-                    if (profile && profile.email) {
-                        currentUser = {
-                            displayName: profile.name || profile.given_name,
-                            email: profile.email
-                        };
-                        localStorage.setItem('user_session', JSON.stringify(currentUser));
-                        window.location.hash = ""; // Очищаем адресную строку
-                        renderInterface();
-                    }
-                }).catch(function(e) { showRuntimeError("Google API Error: " + e.message); });
-        } else {
-            // Проверяем сохраненную сессию
-            var saved = localStorage.getItem('user_session');
-            if (saved) {
-                currentUser = JSON.parse(saved);
-                renderInterface();
-            }
-        }
-
-        function renderInterface() {
-            if (!currentUser) return;
-            document.getElementById('auth-screen').classList.add('hidden');
-            document.getElementById('main-screen').classList.remove('hidden');
-            document.getElementById('user-name').innerText = currentUser.displayName;
-
-            if (currentUser.email && ADMIN_EMAILS.includes(currentUser.email.toLowerCase().trim())) {
-                document.getElementById('user-role').innerText = "Администратор";
-                document.getElementById('user-role').style.background = "#e67e22";
-                document.getElementById('user-role').style.color = "white";
-                document.getElementById('admin-panel').classList.remove('hidden');
-            } else {
-                document.getElementById('user-role').innerText = "Студент";
-                document.getElementById('user-role').style.background = "#2ecc71";
-                document.getElementById('user-role').style.color = "white";
-                document.getElementById('admin-panel').classList.add('hidden');
-            }
-            loadLecturesRest();
-        }
-
+    // Загрузка лекций из Firestore
